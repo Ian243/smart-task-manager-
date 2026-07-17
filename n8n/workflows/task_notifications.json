@@ -1,0 +1,129 @@
+{
+  "name": "Task Notifications",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "task-events",
+        "options": {}
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "=http://api:8000/api/v1/tasks/{{$json.body.task_id}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "change-me-in-production"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Fetch Task",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "rules": [
+            {
+              "cndn": [
+                {
+                  "value1": "={{ $('Webhook').item.json.body.event }}",
+                  "value2": "ASSIGNED"
+                }
+              ]
+            },
+            {
+              "cndn": [
+                {
+                  "value1": "={{ $('Webhook').item.json.body.event }}",
+                  "value2": "COMPLETED"
+                }
+              ]
+            }
+          ]
+        },
+        "fallbackOutput": 2
+      },
+      "name": "Switch",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "sendTo": "={{ $json.assignee.email }}",
+        "subject": "=New Task Assigned: {{$json.title}}",
+        "message": "=Hi {{$json.assignee.name}},\n\nYou have been assigned to a new task: {{$json.title}}.\nPriority: {{$json.priority}}\n\nPlease check the Smart Task Manager dashboard."
+      },
+      "name": "Gmail - Assigned",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 1,
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "sendTo": "={{ $json.assignee.email }}",
+        "subject": "=Task Completed: {{$json.title}}",
+        "message": "=Hi {{$json.assignee.name}},\n\nThe task {{$json.title}} has been marked as completed!"
+      },
+      "name": "Gmail - Completed",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 1,
+      "position": [900, 400]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Fetch Task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Task": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Gmail - Assigned",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gmail - Completed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

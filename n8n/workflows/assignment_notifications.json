@@ -1,0 +1,118 @@
+{
+  "name": "2. Assignment & Completion Notifications",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "task-events",
+        "options": {}
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "url": "=http://api:8000/api/v1/tasks/{{ $json.body.task_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "replace-with-a-shared-secret"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Get Task Details",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [200, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $('Webhook').item.json.body.event }}",
+              "operation": "equal",
+              "value2": "ASSIGNED"
+            }
+          ]
+        }
+      },
+      "name": "IF Event == ASSIGNED",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [400, 0]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.assignee.email }}",
+        "subject": "=New Task Assigned: {{ $json.title }}",
+        "message": "=Hi {{ $json.assignee.name }},<br><br>You have been assigned to a new task '{{ $json.title }}'.<br><br>Due Date: {{ $json.due_date }}<br><br>Best,<br>Smart Task Manager",
+        "options": {}
+      },
+      "name": "Gmail (Assigned)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [600, -100]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.assignee.email }}",
+        "subject": "=Task Completed: {{ $json.title }}",
+        "message": "=Hi {{ $json.assignee.name }},<br><br>Your task '{{ $json.title }}' has been marked as completed. Great job!<br><br>Best,<br>Smart Task Manager",
+        "options": {}
+      },
+      "name": "Gmail (Completed)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [600, 100]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get Task Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Task Details": {
+      "main": [
+        [
+          {
+            "node": "IF Event == ASSIGNED",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Event == ASSIGNED": {
+      "main": [
+        [
+          {
+            "node": "Gmail (Assigned)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gmail (Completed)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
