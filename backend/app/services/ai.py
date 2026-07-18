@@ -19,6 +19,8 @@ from app.schemas.task import TaskCreate
 from app.services import task as task_service
 from app.services import dashboard as dashboard_service
 from app.services import task_extras
+from app.services import recurring as recurring_service
+from app.schemas.recurring import RecurringTaskCreate
 
 settings = get_settings()
 
@@ -178,6 +180,25 @@ TOOLS = [
                 "required": ["title", "priority"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "create_recurring_template",
+            "description": "Create a new recurring task template.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "title": {"type": "string", "description": "The title template of the task"},
+                    "description": {"type": "string", "description": "Detailed description of the task"},
+                    "priority": {"type": "string", "description": "Priority: low, medium, or high"},
+                    "cadence": {"type": "string", "description": "Cadence: daily, weekly, or monthly"},
+                    "next_run_at": {"type": "string", "description": "ISO 8601 datetime string for when it should run next, e.g. 2026-07-20T00:00:00Z"},
+                    "assignee_name": {"type": "string", "description": "Name or email of the person to assign this task to"}
+                },
+                "required": ["title", "cadence", "next_run_at"]
+            }
+        }
     }
 ]
 
@@ -254,6 +275,42 @@ async def chat_with_agent(session: AsyncSession, message: str, current_user: Use
                             tool_result = f"Successfully created task '{new_task.title}' with ID {new_task.id}."
                     except Exception as e:
                         tool_result = f"Error creating task: {str(e)}"
+                        
+                elif tool_call.function.name == "create_recurring_template":
+                    try:
+                        from sqlalchemy import select
+                        from datetime import datetime, timezone
+                        assignee_id = None
+                        if args.get("assignee_name"):
+                            stmt = select(User).where(
+                                (User.name.ilike(f"%{args['assignee_name']}%")) | 
+                                (User.email.ilike(f"%{args['assignee_name']}%"))
+                            )
+                            result = await session.execute(stmt)
+                            user_match = result.scalars().first()
+                            if user_match:
+                                assignee_id = user_match.id
+                            else:
+                                tool_result = f"Could not find a user matching '{args['assignee_name']}'."
+                        
+                        if not tool_result:
+                            date_str = args.get("next_run_at", "").replace("Z", "+00:00")
+                            next_run = datetime.fromisoformat(date_str)
+                            if next_run.tzinfo is None:
+                                next_run = next_run.replace(tzinfo=timezone.utc)
+                                
+                            tmpl_in = RecurringTaskCreate(
+                                title_template=args.get("title"),
+                                description_template=args.get("description"),
+                                priority=args.get("priority", "medium").lower(),
+                                cadence=args.get("cadence", "daily").lower(),
+                                next_run_at=next_run,
+                                assignee_id=assignee_id
+                            )
+                            new_tmpl = await recurring_service.create_template(session, tmpl_in, current_user)
+                            tool_result = f"Successfully created recurring template '{new_tmpl.title_template}' (Cadence: {new_tmpl.cadence.value}) with ID {new_tmpl.id}."
+                    except Exception as e:
+                        tool_result = f"Error creating recurring template: {str(e)}"
                         
                 # Send tool result back to LLM
                 messages.append(message_obj.model_dump())

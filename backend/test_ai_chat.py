@@ -20,7 +20,7 @@ def main():
         
         # Hit chatbot endpoint
         print("Sending message to Chatbot...")
-        payload = {"message": "Can you create a high priority task for me to 'Review quarterly budget' due tomorrow?"}
+        payload = {"message": "Can you create a new recurring template to 'Check server logs' every week starting next Monday? Please assign it to Manager Bob."}
         res = requests.post(f"{BASE_URL}/api/v1/ai/chat", headers=headers, json=payload)
         
         print(f"Status Code: {res.status_code}")
