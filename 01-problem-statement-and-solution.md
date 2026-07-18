@@ -137,4 +137,3 @@ The remaining DPR sections will be written in order, each building on this:
 
 (Scalability considerations are already captured above in Section 5 and will be referenced, not repeated, when we get to the architecture section.)
 
-Once this direction is confirmed, we'll proceed to the ER diagram and API contract next, then start scaffolding the actual codebase.
