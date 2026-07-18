@@ -178,31 +178,4 @@ Already finalized in `01-problem-statement-and-solution.md` §5 — stateless Fa
 
 ---
 
-## 11. Implementation Plan — Session-by-Session Roadmap
 
-Use this as the checklist for future build sessions. Each phase is designed to be a self-contained session.
-
-- **Phase 0 — Scaffolding:** repo structure, Docker Compose (api/postgres/n8n/redis), env config, base FastAPI app with health check.
-- **Phase 1 — Database:** SQLAlchemy models for all entities in §7, Alembic migrations, seed script.
-- **Phase 2 — Auth:** register/login/refresh, JWT middleware (role embedded as a claim), password hashing, role-based dependency guards (`require_role`), ownership-based checks in the service layer. Seed 4 demo users (1 manager + 3 members) so the member/manager permission boundary can be demonstrated live, not just described.
-- **Phase 3 — Core task CRUD:** tasks, assignment, priority, due dates, status, soft delete, search/filter/sort/pagination.
-- **Phase 4 — Comments, activity log, attachments:** comment endpoints, auto-activity-logging on field changes, file upload/storage interface.
-- **Phase 5 — Dashboard/analytics:** aggregate queries for the dashboard + the `due-soon`/`overdue`/`summary` endpoints n8n will consume.
-- **Phase 6 — n8n automation workflows (narrowed scope):** Build **two workflows fully, end-to-end**: (1) assignment/completion notifications (webhook-triggered) and (2) due-date reminders (scheduled polling) — chosen because together they exercise both automation patterns (event-driven and scheduled) rather than picking two similar ones. The remaining four (escalation, recurring generation, daily/weekly summaries) are **designed but deferred** — same REST endpoints already listed in §8 support them, so adding them later is pure n8n configuration, not backend rework. **Build method:** provision these two workflows via n8n's REST API / JSON import rather than manual UI clicking, so the step is scriptable and reproducible by an autonomous coding agent; export the resulting workflow JSON into the repo (`n8n/workflows/*.json`) for version control. Open the n8n UI afterward to view/demo/tweak the workflow visually — the visual artifact still exists, it's just not how an agent builds it.
-- Phase 7 — Agentic AI layer: `ai/` package, tool definitions over the task service layer, the four AI features in §6 in order.
-- **Phase 8 — Frontend:** React app — login, dashboard, task board/list, task detail (comments/attachments/activity), chat widget for the AI interface. Built against the **full API surface** regardless of which n8n workflows are live yet, plus a notifications-log view, so adding the four deferred workflows later requires zero frontend changes — you'll be able to see automation firing as each one comes online.
-- Phase 9 — Hardening: logging, error handling, rate limiting, security pass against §9.
-- Phase 10 — Docs & deployment: remaining DPR sections (ER diagram, API contracts, formal automation/AI/security write-ups), README with setup instructions, final Docker Compose demo run-through.
-
-### Definition of Done — per phase
-
-Each phase is only "done" when all of these hold, not just when the code is written:
-
-- [ ] Code follows `03-coding-conventions-and-file-structure-rules.md` (file consolidation + inline comment rules)
-- [ ] Relevant model/relationship changes have a matching Alembic migration, reviewed before applying
-- [ ] New endpoints are reachable and manually verified via `/docs` (or curl) — not just "should work"
-- [ ] `configure_mappers()` / app import still succeeds with no errors (quick regression check after model changes)
-- [ ] Any new env vars are added to `.env.example` with a comment explaining their purpose
-- [ ] The phase's specific requirement(s) from §5/§6 are demonstrably satisfied, not just plausible
-
-**Status as of this writing:** Phase 0 (scaffolding) and Phase 1 (database) are complete — verified via `configure_mappers()`, a compiled-DDL check against the ERD, and a clean FastAPI app import. Models are consolidated into `models/user.py` and `models/task_domain.py` per the coding conventions doc. Next up: **Phase 2 — Auth.**
