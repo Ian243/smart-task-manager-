@@ -49,23 +49,15 @@ A comprehensive, full-stack task tracker built with **FastAPI**, **React (Vite +
 
 The entire application is containerized and requires only Docker to run.
 
-### 1. Push to GitHub (From Dev Machine)
-Ensure your `.env` file is excluded (check `.gitignore`).
-```bash
-git init
-git add .
-git commit -m "Initial commit: Smart Task Manager"
-git remote add origin https://github.com/YourUsername/smart-task-manager.git
-git push -u origin main
-```
 
-### 2. Clone on Target Machine
+
+### 1. Clone on Target Machine
 ```bash
 git clone https://github.com/YourUsername/smart-task-manager.git
 cd smart-task-manager
 ```
 
-### 3. Create the Environment File
+### 2. Create the Environment File
 Create a `.env` file in the root folder with the following variables:
 ```ini
 ENVIRONMENT=development
@@ -84,13 +76,13 @@ GROQ_API_KEY=gsk_your_real_api_key_here
 LLM_MODEL_NAME=groq/llama-3.3-70b-versatile
 ```
 
-### 4. Deploy using Docker Compose
+### 3. Deploy using Docker Compose
 ```bash
 docker compose up -d --build
 ```
 This will build the Vite frontend, the FastAPI backend, and pull the PostgreSQL, Redis, and n8n images. The `api` container automatically runs `alembic upgrade head` and seeds the database on startup. 
 
-### 5. Final N8N Setup & Access
+### 4. Final N8N Setup & Access
 - **React Frontend**: [http://localhost:5173](http://localhost:5173)
 - **FastAPI Backend / Swagger Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
 - **n8n Dashboard**: [http://localhost:5678](http://localhost:5678) 
